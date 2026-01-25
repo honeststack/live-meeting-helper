@@ -1,0 +1,11 @@
+{
+  "name": "live-meeting-helper",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter @live-meeting-helper/frontend dev",
+    "build": "pnpm --filter @live-meeting-helper/frontend build",
+    "start": "pnpm --filter @live-meeting-helper/frontend start",
+    "lint": "pnpm --filter @live-meeting-helper/frontend lint"
+  }
+}
