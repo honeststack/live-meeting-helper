@@ -47,21 +47,34 @@ export function MicTest({ className = '' }: MicTestProps) {
     setAudioLevel(0)
   }, [])
 
-  const updateLevel = useCallback(() => {
-    if (!analyserRef.current) return
+  // Audio level monitoring effect
+  useEffect(() => {
+    if (!isRecording || !analyserRef.current) return
 
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
-    analyserRef.current.getByteFrequencyData(dataArray)
+    const updateLevel = () => {
+      if (!analyserRef.current) return
 
-    let sum = 0
-    for (let i = 0; i < dataArray.length; i++) {
-      sum += dataArray[i] * dataArray[i]
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
+      analyserRef.current.getByteFrequencyData(dataArray)
+
+      let sum = 0
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i] * dataArray[i]
+      }
+      const rms = Math.sqrt(sum / dataArray.length)
+      setAudioLevel(Math.min(1, rms / 128))
+
+      animationFrameRef.current = requestAnimationFrame(updateLevel)
     }
-    const rms = Math.sqrt(sum / dataArray.length)
-    setAudioLevel(Math.min(1, rms / 128))
 
     animationFrameRef.current = requestAnimationFrame(updateLevel)
-  }, [])
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+    }
+  }, [isRecording])
 
   const startTest = useCallback(async () => {
     try {
@@ -100,9 +113,6 @@ export function MicTest({ className = '' }: MicTestProps) {
       mediaRecorder.start(100) // 100ms chunks
       setIsRecording(true)
 
-      // Start level monitoring
-      animationFrameRef.current = requestAnimationFrame(updateLevel)
-
       // Auto-stop after 3 seconds
       timeoutRef.current = setTimeout(() => {
         cleanup()
@@ -111,7 +121,7 @@ export function MicTest({ className = '' }: MicTestProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to access microphone')
     }
-  }, [updateLevel, cleanup])
+  }, [cleanup])
 
   const clearTest = useCallback(() => {
     if (audioUrl) {

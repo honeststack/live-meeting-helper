@@ -50,27 +50,37 @@ export function useAudioRecorder(
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
 
-  // Calculate audio level from analyser
-  const updateAudioLevel = useCallback(() => {
-    if (!analyserRef.current) return
+  // Audio level monitoring effect
+  useEffect(() => {
+    if (!state.isRecording || !analyserRef.current) return
 
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
-    analyserRef.current.getByteFrequencyData(dataArray)
+    const updateAudioLevel = () => {
+      if (!analyserRef.current) return
 
-    // Calculate RMS-like value from frequency data
-    let sum = 0
-    for (let i = 0; i < dataArray.length; i++) {
-      sum += dataArray[i] * dataArray[i]
-    }
-    const rms = Math.sqrt(sum / dataArray.length)
+      const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount)
+      analyserRef.current.getByteFrequencyData(dataArray)
 
-    // Normalize to 0-1 range with some scaling
-    const normalizedLevel = Math.min(1, rms / 128)
+      // Calculate RMS-like value from frequency data
+      let sum = 0
+      for (let i = 0; i < dataArray.length; i++) {
+        sum += dataArray[i] * dataArray[i]
+      }
+      const rms = Math.sqrt(sum / dataArray.length)
 
-    setState(prev => ({ ...prev, audioLevel: normalizedLevel }))
+      // Normalize to 0-1 range with some scaling
+      const normalizedLevel = Math.min(1, rms / 128)
 
-    if (state.isRecording) {
+      setState(prev => ({ ...prev, audioLevel: normalizedLevel }))
+
       animationFrameRef.current = requestAnimationFrame(updateAudioLevel)
+    }
+
+    animationFrameRef.current = requestAnimationFrame(updateAudioLevel)
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
     }
   }, [state.isRecording])
 
@@ -128,15 +138,12 @@ export function useAudioRecorder(
         sampleRate: actualSampleRate,
       }))
 
-      // Start audio level monitoring
-      animationFrameRef.current = requestAnimationFrame(updateAudioLevel)
-
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to access microphone'
       setState(prev => ({ ...prev, error: errorMessage }))
       console.error('Error starting recording:', err)
     }
-  }, [onAudioData, chunkIntervalMs, updateAudioLevel])
+  }, [onAudioData, chunkIntervalMs])
 
   const stopRecording = useCallback(() => {
     // Stop animation frame
