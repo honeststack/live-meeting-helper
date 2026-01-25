@@ -126,7 +126,7 @@ live-meeting-helper/
 
 ```
 ┌─────────────┐     WebSocket      ┌─────────────────┐
-│   Browser   │ ◄───────────────► │  Node.js Server │
+│   Browser   │ ◄────────────────► │  Node.js Server │
 │  (React)    │   Audio + Text     │                 │
 └─────────────┘                    └────────┬────────┘
                                             │
