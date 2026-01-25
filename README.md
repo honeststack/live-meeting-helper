@@ -3,7 +3,7 @@
 [![LangChain](https://img.shields.io/badge/LangChain-1C3C3C.svg?logo=langchain&logoColor=white)](https://www.langchain.com/)
 [![Google Cloud](https://img.shields.io/badge/Google_Cloud-Speech--to--Text-4285F4.svg?logo=googlecloud&logoColor=white)](https://cloud.google.com/speech-to-text)
 
-![Live Meeting Helper](assets/lmh-logo.webp)
+<p><img src="assets/lmh-logo.webp" width="200" alt="Live Meeting Helper Logo"></p>
 
 # Live Meeting Helper
 
