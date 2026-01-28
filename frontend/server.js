@@ -12,6 +12,12 @@ const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
 const port = parseInt(process.env.PORT || '3000', 10)
 
+// Security limits for WebSocket messages
+const MAX_MESSAGE_SIZE = 1024 * 512 // 512KB max message size
+const MAX_CONTEXT_LENGTH = 50000 // 50K chars for transcript context
+const MAX_QUESTION_LENGTH = 1000 // 1K chars for questions
+const MAX_AUDIO_CHUNK_SIZE = 1024 * 256 // 256KB max audio chunk
+
 const app = next({ dev, hostname, port })
 const handle = app.getRequestHandler()
 
@@ -311,6 +317,14 @@ app.prepare().then(() => {
     ws.on('message', async (message) => {
       // Convert Buffer to string to check if it's a JSON message
       const buffer = Buffer.isBuffer(message) ? message : Buffer.from(message)
+
+      // Security: Reject messages that exceed max size
+      if (buffer.length > MAX_MESSAGE_SIZE) {
+        console.warn(`Rejected oversized message: ${buffer.length} bytes (max: ${MAX_MESSAGE_SIZE})`)
+        ws.send(JSON.stringify({ type: 'error', message: 'Message too large' }))
+        return
+      }
+
       const messageStr = buffer.toString('utf8')
 
       // Check if it's a JSON message (AI request)
@@ -318,6 +332,18 @@ app.prepare().then(() => {
         try {
           const data = JSON.parse(messageStr)
           if (data.type === 'ai_request') {
+            // Security: Validate context length
+            if (data.context && data.context.length > MAX_CONTEXT_LENGTH) {
+              console.warn(`Rejected oversized context: ${data.context.length} chars (max: ${MAX_CONTEXT_LENGTH})`)
+              ws.send(JSON.stringify({ type: 'ai_error', message: 'Context too large' }))
+              return
+            }
+            // Security: Validate question length
+            if (data.question && data.question.length > MAX_QUESTION_LENGTH) {
+              console.warn(`Rejected oversized question: ${data.question.length} chars (max: ${MAX_QUESTION_LENGTH})`)
+              ws.send(JSON.stringify({ type: 'ai_error', message: 'Question too long' }))
+              return
+            }
             console.log('AI request received:', data.question || 'no specific question')
             await handleAIRequest(ws, data.context, data.question)
             return
@@ -325,6 +351,12 @@ app.prepare().then(() => {
         } catch (err) {
           // Not valid JSON, treat as audio data
         }
+      }
+
+      // Security: Validate audio chunk size
+      if (buffer.length > MAX_AUDIO_CHUNK_SIZE) {
+        console.warn(`Rejected oversized audio chunk: ${buffer.length} bytes (max: ${MAX_AUDIO_CHUNK_SIZE})`)
+        return // Silently drop oversized audio chunks
       }
 
       // Receive audio data and process it

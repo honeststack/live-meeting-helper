@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import DOMPurify from 'dompurify'
 
 interface AIAnswerDisplayProps {
   answer: string
@@ -13,9 +14,9 @@ interface AIAnswerDisplayProps {
   transcribeOnly?: boolean
 }
 
-// Simple markdown to HTML converter
+// Simple markdown to HTML converter with XSS protection
 function renderMarkdown(text: string): string {
-  return text
+  const html = text
     // Headers (must be at line start)
     .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold mt-3 mb-1 text-[var(--color-pulse-cyan)]">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="text-lg font-semibold mt-4 mb-2 text-[var(--color-pulse-cyan)]">$1</h2>')
@@ -30,6 +31,12 @@ function renderMarkdown(text: string): string {
     .replace(/`([^`]+)`/g, '<code class="bg-white/10 px-1.5 py-0.5 rounded text-sm font-mono">$1</code>')
     // Line breaks
     .replace(/\n/g, '<br />')
+
+  // Sanitize HTML to prevent XSS attacks
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'strong', 'em', 'li', 'code', 'br'],
+    ALLOWED_ATTR: ['class'],
+  })
 }
 
 export function AIAnswerDisplay({
