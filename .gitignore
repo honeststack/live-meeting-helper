@@ -42,7 +42,6 @@ next-env.d.ts
 # Misc
 .DS_Store
 *.pem
-*.psd
 Thumbs.db
 
 # IDE
