@@ -13,7 +13,7 @@
     "i18n:ai": "node --env-file=.env.local scripts/i18n-ai-fill.mjs"
   },
   "dependencies": {
-    "@google-cloud/speech": "^7.2.1",
+    "@google-cloud/speech": "^8.1.0",
     "@langchain/core": "^1.1.17",
     "@langchain/google-genai": "^2.1.13",
     "@tailwindcss/postcss": "^4.1.18",
